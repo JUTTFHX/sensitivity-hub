@@ -8760,7 +8760,18 @@ body.light .site-header .brand-tag{ color: var(--amber); }
       </div>
     </div>
   </div>
-</section>
+</section><div class="jx-ad-slot" style="margin:24px auto; max-width:728px; min-height:90px; display:flex; align-items:center; justify-content:center;">
+  <!-- Hero Section Banner -->
+  <ins class="adsbygoogle"
+       style="display:block; width:100%;"
+       data-ad-client="ca-pub-5237260139698872"
+       data-ad-slot="1386631606"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+  <script>
+       (adsbygoogle = window.adsbygoogle || []).push({});
+  </script>
+</div>
 
 <!-- ============ FEATURE HUB (Phase 2: premium quick-nav cards |
      Phase 10: visible section header, matching the standard
@@ -35739,6 +35750,18 @@ html.jx-scroll-active *::after{
   }, true);
 })();
 </script>
-<!-- ============== END JX FX ============== -->
+<!-- ============== END JX FX ============== --><script>
+(function(){
+  function setAdVisibility(showAds){
+    document.querySelectorAll('.jx-ad-slot').forEach(function(el){
+      el.style.display = showAds ? '' : 'none';
+    });
+  }
+  setAdVisibility(true);
+  window.JX_checkPro().then(function(isPro){
+    setAdVisibility(!isPro);
+  });
+})();
+</script>
 </body>
 </html>
