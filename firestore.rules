@@ -1,0 +1,465 @@
+rules_version = '2';
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+    // ============================================================
+    // AUTHORIZATION HELPERS
+    // ============================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.admin == true;
+    }
+
+    function isSuperAdmin() {
+      return signedIn()
+        && request.auth.token.admin == true
+        && request.auth.token.role == "super_admin";
+    }
+
+    // Used by combos / hudLayouts / guilds / teamFinder below: the
+    // submitterUid stamped on a submission at create time (by the
+    // "Submit Your Combo" / "Submit Your HUD Layout" / "Create Guild" /
+    // "List Yourself" forms) must match the signed-in caller's own uid.
+    // This is what lets a visitor's own "Track Your..." panel and the
+    // Player Command Center's "My Requests" tab reliably find only
+    // their own submissions — without this check, a malicious client
+    // could stamp someone else's uid on a submission and have it show
+    // up in that other person's tracker instead of their own.
+    function ownsSubmission() {
+      return signedIn()
+        && request.resource.data.submitterUid == request.auth.uid;
+    }
+
+
+    // ============================================================
+    // DEVICES
+    // Public read.
+    // Admin owns device CRUD.
+    // Public may increment ONLY searchCount.
+    // ============================================================
+
+    match /devices/{docId} {
+
+      allow read: if true;
+
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        || (
+          request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["searchCount"])
+
+          && request.resource.data.searchCount is number
+        );
+    }
+
+
+    // ============================================================
+    // PLAYERS
+    // ============================================================
+
+    match /players/{docId} {
+
+      allow read: if true;
+
+      allow write: if isAdmin();
+    }
+
+
+    // ============================================================
+    // REVIEWS
+    //
+    // Public read. Create requires sign-in (matches requireVerifiedAccount()
+    // gate in the "Leave a Review" form) and the submitted doc must carry
+    // approved == true — the only shape addReview() ever writes. This
+    // keeps a malicious client from creating a doc with approved missing
+    // or false, while still allowing the app's current auto-publish
+    // behavior (no moderation queue for reviews, unlike combos/hudLayouts/
+    // guilds/teamFinder). Update/delete (including admin's approve/
+    // reject/delete tools) stay admin-only.
+    // ============================================================
+
+    match /reviews/{docId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          signedIn()
+          && request.resource.data.approved == true
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // REQUESTS
+    //
+    // Existing collection is reused for:
+    // - legacy device requests
+    // - tournament requests
+    // - guildJoin requests
+    // - pro_membership requests (PRO-P01-C — this rule is unchanged for
+    //   that type; actual membership activation on approval goes through
+    //   the separate, admin-only users/{uid} membership rule below, never
+    //   through this collection)
+    // - future deviceRequest type
+    //
+    // Keep public create because the existing site depends on it.
+    // Read is intentionally locked to admin/owner because request
+    // docs carry a uid and personal request data — do NOT open this
+    // to public read to power a public count. If a public "total
+    // requests" stat is ever needed, give it its own dedicated
+    // counter collection (same pattern as /copies, /visits,
+    // /searches below) instead.
+    // ============================================================
+
+    match /requests/{docId} {
+
+      allow create: if true;
+
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.uid == request.auth.uid
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // GUILDS
+    //
+    // Public read (needed for Browse + Admin + everyone's "Track Your
+    // Requests" panel, which reads the whole collection and filters
+    // client-side by submitterUid — same shape as combos/hudLayouts
+    // below).
+    //
+    // Create requires sign-in (matches requireVerifiedAccount() gate on
+    // "Create a Guild"), ownership of the stamped submitterUid, and that
+    // new guilds always start unapproved — matching combos/hudLayouts —
+    // so a submission can never skip admin review by being written with
+    // approved:true directly.
+    // ============================================================
+
+    match /guilds/{docId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          ownsSubmission()
+          && request.resource.data.approved == false
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // TEAM FINDER
+    //
+    // Same shape as GUILDS above, for the same reason: "List Yourself"
+    // listings carry submitterUid so "Track Your Listing" / "My Requests"
+    // can find them, so create requires sign-in + ownership of that uid
+    // + approved:false.
+    // ============================================================
+
+    match /teamFinder/{docId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          ownsSubmission()
+          && request.resource.data.approved == false
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // CHARACTER COMBOS
+    // Public can submit only unapproved entries, and only with their
+    // own uid stamped as submitterUid (see ownsSubmission() above) —
+    // this is what lets "Track Your Combo" / "My Requests" find only
+    // a visitor's own submissions instead of trusting a client-supplied
+    // uid at face value.
+    // Admin controls moderation.
+    // ============================================================
+
+    match /combos/{docId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          ownsSubmission()
+          && request.resource.data.approved == false
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // HUD LAYOUTS
+    // Public can submit only unapproved entries, and only with their
+    // own uid stamped as submitterUid (see ownsSubmission() above) —
+    // same reasoning as CHARACTER COMBOS above.
+    // Admin controls moderation.
+    // ============================================================
+
+    match /hudLayouts/{docId} {
+
+      allow read: if true;
+
+      allow create: if isAdmin()
+        || (
+          ownsSubmission()
+          && request.resource.data.approved == false
+        );
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // USERS
+    //
+    // One doc per signed-up user: profile (username, avatarUrl,
+    // favorites, sensitivityHistory) plus, as of PRO-P01-B, a
+    // `membership` field (see JX_Membership). A user may read/write
+    // ONLY their own doc — but writing the `membership` field itself
+    // is carved out from the owner's normal write access:
+    //
+    // - create: ensureUserProfileDoc() never sets membership on first
+    //   sign-in (a missing field reads as "free" via
+    //   JX_Membership.getEffectiveMembership()), so create is allowed
+    //   as long as `membership` isn't smuggled in on day one.
+    // - update: the owner can freely edit username/avatarUrl/favorites/
+    //   sensitivityHistory/etc., but is blocked from touching the
+    //   `membership` key at all — without this, any signed-in visitor
+    //   could grant themselves PRO for free via
+    //   updateDoc(userRef, { membership: { plan:"pro", status:"active" } })
+    //   straight from devtools.
+    // - membership itself can ONLY be changed by an admin
+    //   (adminSetMembership() / the PRO-P02 named admin actions all
+    //   funnel through this), and that admin update is scoped to ONLY
+    //   the membership field so it doesn't become a blanket bypass onto
+    //   the rest of someone else's private profile doc.
+    // ============================================================
+
+    match /users/{uid} {
+
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && !('membership' in request.resource.data);
+
+      allow update: if isOwner(uid)
+        && !request.resource.data
+             .diff(resource.data)
+             .affectedKeys()
+             .hasAny(["membership"]);
+
+      allow update: if isAdmin()
+        && request.resource.data
+             .diff(resource.data)
+             .affectedKeys()
+             .hasOnly(["membership"]);
+
+      allow delete: if isOwner(uid);
+    }
+
+
+    // ============================================================
+    // VISITS
+    // ============================================================
+
+    match /visits/{docId} {
+
+      allow create, read: if true;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // SEARCHES
+    // ============================================================
+
+    match /searches/{docId} {
+
+      allow create, read: if true;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // COPIES
+    //
+    // One doc per "Sensitivities Copied" hero-stat event (fires
+    // when a visitor copies a sensitivity profile/value). Docs hold
+    // nothing but a createdAt timestamp. Same public create/read,
+    // admin-only update/delete shape as the other analytics
+    // collections below — getStats() runs for every regular
+    // visitor, so read has to stay public or the count gets stuck
+    // at 0 for everyone but admins.
+    // ============================================================
+
+    match /copies/{docId} {
+
+      allow create, read: if true;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // REQUEST EVENTS
+    //
+    // Data-free companion to /requests above: one doc per submitted
+    // request, holding nothing but a createdAt timestamp. /requests
+    // itself stays admin/owner-only for read because those docs carry
+    // personal contact info — this collection exists purely so the
+    // public "Total Requests" stat has something safe to count via
+    // getCountFromServer(). Same public create/read, admin-only
+    // update/delete shape as /copies.
+    // ============================================================
+
+    match /requestEvents/{docId} {
+
+      allow create, read: if true;
+
+      allow update, delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // PRESENCE
+    //
+    // One doc per visitorId, upserted (create-or-merge) every ~5 min
+    // while a tab is open — powers the "Users Online" hero stat.
+    // Docs hold nothing but a lastSeen timestamp, so public
+    // create/update is an acceptable trade for a working public
+    // "online now" counter, same reasoning as /visits and /searches.
+    // Never deleted client-side — stale docs just age out of the
+    // time-window query, whether it's the one-shot getOnlineCount()
+    // aggregation or the live watchOnlineCount() onSnapshot listener
+    // that re-cuts its own window every ~1 min. Same "allow read: if
+    // true" covers both — a realtime listener needs no broader read
+    // permission than the one-shot count did.
+    // ============================================================
+
+    match /presence/{visitorId} {
+
+      allow create, update, read: if true;
+
+      allow delete: if isAdmin();
+    }
+
+
+    // ============================================================
+    // TOURNAMENTS
+    //
+    // Admin controls create/delete.
+    // Public may increment slotsFilled by exactly 1,
+    // and never beyond slotsTotal.
+    // ============================================================
+
+    match /tournaments/{docId} {
+
+      allow read: if true;
+
+      allow create, delete: if isAdmin();
+
+      allow update: if isAdmin()
+        || (
+          request.resource.data
+            .diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["slotsFilled"])
+
+          && request.resource.data.slotsFilled is number
+
+          && request.resource.data.slotsFilled
+             == resource.data.slotsFilled + 1
+
+          && request.resource.data.slotsFilled
+             <= resource.data.slotsTotal
+        );
+    }
+
+
+    // ============================================================
+    // HUDS
+    // ============================================================
+
+    match /huds/{docId} {
+
+      allow read: if true;
+
+      allow write: if isAdmin();
+    }
+
+
+    // ============================================================
+    // SETTINGS
+    //
+    // Public read on every doc in this collection (Maintenance Mode
+    // and everything else in Site Settings has to actually reach real
+    // visitors, and getPaymentMethods()/getProPlans() are read by
+    // every visitor on page load too).
+    //
+    // Write is split by doc id, to match how the admin dashboard
+    // actually gates access:
+    //
+    // - settings/site and settings/proPlans are edited from the
+    //   "Settings" and "Pro Plans" nav panels, both of which
+    //   applyAdminRoleGating() hides/disables for any admin without
+    //   the super_admin claim — so these stay super-admin-only here
+    //   too (the UI gating is a convenience; this rule is what
+    //   actually enforces it).
+    // - settings/paymentMethods is edited from the Payment Methods
+    //   editor embedded in the "Tournaments" panel, which is NOT
+    //   super-admin-gated in the UI — any admin can open it. Locking
+    //   this doc to isSuperAdmin() (like the old rule did) makes
+    //   savePaymentMethods() permission-deny for every admin who
+    //   isn't also a super admin, even though the button is right
+    //   there for them to click. This doc is carved out to isAdmin()
+    //   so it actually matches what the UI lets an admin do.
+    // ============================================================
+
+    match /settings/paymentMethods {
+
+      allow read: if true;
+
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+
+      allow read: if true;
+
+      allow write: if isSuperAdmin();
+    }
+  }
+}
