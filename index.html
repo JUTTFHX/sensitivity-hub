@@ -35774,9 +35774,29 @@ html.jx-scroll-active *::after{
 </script>
 <!-- ============== END JX FX ============== --><script>
 (function(){
-  function setAdVisibility(showAds){
-    document.querySelectorAll('.jx-ad-slot').forEach(function(el){
-      el.style.display = showAds ? '' : 'none';
+  var isProUser = false;
+
+  function updateSlot(slot){
+    var ins = slot.querySelector('ins.adsbygoogle');
+    var status = ins ? ins.getAttribute('data-ad-status') : null;
+    var isFilled = status === 'filled';
+    slot.style.display = (!isProUser && isFilled) ? '' : 'none';
+  }
+
+  document.querySelectorAll('.jx-ad-slot').forEach(function(slot){
+    slot.style.display = 'none'; // hidden until we know it's a real, filled ad
+    var ins = slot.querySelector('ins.adsbygoogle');
+    if(!ins) return;
+    var observer = new MutationObserver(function(){ updateSlot(slot); });
+    observer.observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] });
+  });
+
+  window.JX_checkPro().then(function(isPro){
+    isProUser = isPro;
+    document.querySelectorAll('.jx-ad-slot').forEach(updateSlot);
+  });
+})();
+</script>     el.style.display = showAds ? '' : 'none';
     });
   }
   setAdVisibility(true);
