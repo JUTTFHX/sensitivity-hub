@@ -1278,7 +1278,7 @@ body.light .nav{
 .nav-actions{ display:flex; align-items:center; gap:10px; }
 
 .nav-toggle{ display:none; }
-@media (max-width: 880px){
+@media (max-width: 1400px){
   .nav-links{
     position:fixed; inset:88px 0 0 0; flex-direction:column; justify-content:flex-start;
     padding:32px var(--gutter); gap:6px; background: var(--void); border-top:1px solid var(--hairline);
@@ -5837,7 +5837,7 @@ html, body {
 
 
 /* --- Mobile menu: full-screen, proper z-index, correct top offset --- */
-@media (max-width: 880px) {
+@media (max-width: 1400px) {
   .nav-links {
     position: fixed;
     top: 0;
@@ -6369,7 +6369,7 @@ body.light .site-header .brand-tag{ color: var(--amber); }
 }
 
 /* Mobile nav overlay: keep existing structure/behavior, refine tone only */
-@media (max-width: 880px){
+@media (max-width: 1400px){
   .site-header .nav-links{ background: var(--void); }
   .site-header .nav-links a{ border-bottom-color: var(--hairline); }
 }
@@ -6402,7 +6402,7 @@ body.light .site-header .brand-tag{ color: var(--amber); }
 @media (max-width: 1180px) and (min-width: 881px){
   .site-header .nav-links a.nav-pro-link{ padding:6px 11px; }
 }
-@media (max-width: 880px){
+@media (max-width: 1400px){
   .site-header .nav-links a.nav-pro-link{
     width:auto; align-self:flex-start; margin-top:4px;
     border-bottom:none; padding:10px 16px;
@@ -9101,10 +9101,11 @@ body.light #device-search::after{ opacity:.25; }
      of being copied into this markup, so there is no second source
      of truth for prices or durations.
 
-     Deliberately NOT registered in SECTION_KEYS / SECTION_DOM_SEL,
-     matching the #pro-convert precedent: applySectionSettings() only
-     re-appends sections it knows about, so this one keeps its
-     position directly beneath the conversion section.
+     UPDATE: now registered in SECTION_KEYS / SECTION_DOM_SEL as
+     "proDestination" (alongside #pro-convert as "proConvert" and
+     #pro-checkout as "proCheckout") so the Section Manager can
+     reorder/hide it like every other section, instead of it always
+     sitting fixed directly beneath the conversion section.
      ============================================================ -->
 <section class="section pro-destination" id="juttfhx-pro" aria-labelledby="proHeroTitle">
   <div class="wrap">
@@ -9850,6 +9851,22 @@ body.light #device-search::after{ opacity:.25; }
 <style>
 /* ---- Section shell: near-black stage + technical grid ---- */
 #juttfhx-pro{ position:relative; overflow:hidden; scroll-margin-top:90px; }
+/* FIX: #juttfhx-pro is one of the tallest .section elements on the page
+   and also carries content-visibility:auto with a placeholder height
+   (contain-intrinsic-size: 1px 900px, from the shared .section rule)
+   far smaller than its real rendered height. The site-wide scroll-reveal
+   system (document.querySelectorAll(".section, .hero").forEach(observeReveal)
+   in the main script) adds a "reveal" class to every .section, starting
+   it at opacity:0 until a one-shot IntersectionObserver detects it
+   entering the viewport and adds "in" (see .reveal/.reveal.in CSS).
+   For this specific oversized section, that observer was never firing
+   isIntersecting:true reliably (confirmed via DevTools: classList showed
+   "section pro-destination reveal" with no "in"), leaving the whole PRO
+   destination block permanently invisible while still occupying its
+   full layout height. This override forces it visible unconditionally,
+   independent of whether the observer ever adds "in" — it does not
+   touch the reveal system for any other section on the site. */
+#juttfhx-pro.reveal{ opacity:1 !important; transform:none !important; }
 #juttfhx-pro::before{
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
   background:
@@ -16401,7 +16418,18 @@ const JX_SETTINGS_KEY = "juttfhx_site_settings_v1";
 const SECTION_KEYS = [
   "hero","deviceSearch","liveRanking",
   "tournaments","hudGallery","reviews","request",
-  "characterCombo","dashboardWidgets","guildHub","teamFinder"
+  "characterCombo","dashboardWidgets","guildHub","teamFinder",
+  // Registered here so the Section Manager can reorder/hide the PRO
+  // sections like every other section. They were originally left out on
+  // purpose (see the "Deliberately NOT registered" comments beside
+  // #pro-convert / #juttfhx-pro / #pro-checkout in the HTML) so each one
+  // simply sat directly beneath the section before it; appended at the
+  // end here rather than inserted mid-array so any admin's already-saved
+  // sectionOrder (which won't contain these keys yet) picks them up via
+  // the existing "append any SECTION_KEYS entries missing from a saved
+  // order" fallback already used elsewhere, instead of silently losing
+  // its previously-chosen order for the other ten sections.
+  "proConvert","proDestination","proCheckout"
 ];
 const SECTION_LABELS = {
   hero:"Hero", deviceSearch:"Select Your Device",
@@ -16410,7 +16438,10 @@ const SECTION_LABELS = {
   reviews:"User Reviews", request:"Device Request Center",
   characterCombo:"Character Combos",
   dashboardWidgets:"Community Pulse", guildHub:"Guild Recruitment Hub",
-  teamFinder:"Find a Team"
+  teamFinder:"Find a Team",
+  proConvert:"Unlock JUTTFHX PRO (Homepage Strip)",
+  proDestination:"JUTTFHX PRO Showcase & Plans",
+  proCheckout:"Secure Your PRO Access"
 };
 // DOM selector for each section's root element (used for reorder + hide).
 const SECTION_DOM_SEL = {
@@ -16419,7 +16450,8 @@ const SECTION_DOM_SEL = {
   tournaments:"#tournaments",
   hudGallery:"#hud-gallery", reviews:"#reviews", request:"#request",
   characterCombo:"#character-combo",
-  dashboardWidgets:"#dashboard-widgets", guildHub:"#guild-hub", teamFinder:"#team-finder"
+  dashboardWidgets:"#dashboard-widgets", guildHub:"#guild-hub", teamFinder:"#team-finder",
+  proConvert:"#pro-convert", proDestination:"#juttfhx-pro", proCheckout:"#pro-checkout"
 };
 function defaultSectionMeta(){
   const meta = {};
@@ -17342,7 +17374,7 @@ let nextTeamFinderId = 1;
     a.addEventListener("click", closeNav);
   });
   window.addEventListener("resize", ()=>{
-    if(window.innerWidth > 880 && navLinks.classList.contains("open")) closeNav();
+    if(window.innerWidth > 1400 && navLinks.classList.contains("open")) closeNav();
   });
 
   /* ---------- Dynamic footer year ---------- */
