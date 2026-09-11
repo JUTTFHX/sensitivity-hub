@@ -1417,6 +1417,7 @@ body.light .nav{
 .feature-hub::before{
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
   background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(244,196,48,.06), transparent 65%);
+  animation: fh-glow-pulse 9s ease-in-out infinite;
 }
 .feature-hub::after{
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:.5;
@@ -1434,7 +1435,59 @@ body.light .feature-hub::after{ opacity:.22; }
   width:150px; height:150px; color:var(--gold); opacity:.5; z-index:0; pointer-events:none;
 }
 .fh-crosshair svg{ width:100%; height:100%; display:block; }
-@media (max-width: 620px){ .fh-crosshair{ width:110px; height:110px; transform:translate(-50%,-45%); } }
+@media (max-width: 620px){ .fh-crosshair{ width:110px; height:110px; transform:translate(-45%,-45%); } }
+
+@keyframes fh-glow-pulse{
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%{ opacity:.65; transform:scale(1.08); }
+}
+
+/* Lightweight CSS-only "dust" particles — deliberately NOT a canvas/rAF
+   loop. A per-section particle canvas used to live on this page and was
+   removed (see the JS "PARTICLE BACKGROUND" note further down) because an
+   uncapped requestAnimationFrame loop was a major source of page lag,
+   duplicating the sitewide static dust layer. These are plain <span>s
+   animated with transform/opacity only (GPU-cheap, no per-frame JS), so
+   they add motion here without reintroducing that cost. */
+.fh-particles{ position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.fh-particles span{
+  position:absolute; bottom:-12px; left:var(--fh-x,50%);
+  width:var(--fh-size,3px); height:var(--fh-size,3px); border-radius:50%;
+  background:var(--gold); opacity:0;
+  animation:fh-float var(--fh-dur,16s) linear infinite;
+  animation-delay:var(--fh-delay,0s);
+  will-change: transform, opacity;
+}
+.fh-particles span:nth-child(1){ --fh-x:6%;  --fh-size:2px; --fh-dur:15s; --fh-delay:-1s;  --fh-drift:14px; --fh-op:.35; }
+.fh-particles span:nth-child(2){ --fh-x:16%; --fh-size:3px; --fh-dur:19s; --fh-delay:-6s;  --fh-drift:-10px; --fh-op:.28; }
+.fh-particles span:nth-child(3){ --fh-x:27%; --fh-size:2px; --fh-dur:14s; --fh-delay:-3s;  --fh-drift:8px;  --fh-op:.4; }
+.fh-particles span:nth-child(4){ --fh-x:38%; --fh-size:4px; --fh-dur:21s; --fh-delay:-9s;  --fh-drift:-16px; --fh-op:.22; }
+.fh-particles span:nth-child(5){ --fh-x:49%; --fh-size:2px; --fh-dur:17s; --fh-delay:-4s;  --fh-drift:6px;  --fh-op:.32; }
+.fh-particles span:nth-child(6){ --fh-x:58%; --fh-size:3px; --fh-dur:20s; --fh-delay:-12s; --fh-drift:-12px; --fh-op:.26; }
+.fh-particles span:nth-child(7){ --fh-x:67%; --fh-size:2px; --fh-dur:16s; --fh-delay:-2s;  --fh-drift:10px; --fh-op:.38; }
+.fh-particles span:nth-child(8){ --fh-x:74%; --fh-size:4px; --fh-dur:22s; --fh-delay:-15s; --fh-drift:-8px;  --fh-op:.2; }
+.fh-particles span:nth-child(9){ --fh-x:82%; --fh-size:2px; --fh-dur:15s; --fh-delay:-7s;  --fh-drift:12px; --fh-op:.34; }
+.fh-particles span:nth-child(10){ --fh-x:90%; --fh-size:3px; --fh-dur:18s; --fh-delay:-10s; --fh-drift:-14px; --fh-op:.3; }
+.fh-particles span:nth-child(11){ --fh-x:11%; --fh-size:2px; --fh-dur:23s; --fh-delay:-5s;  --fh-drift:9px;  --fh-op:.24; }
+.fh-particles span:nth-child(12){ --fh-x:95%; --fh-size:2px; --fh-dur:14s; --fh-delay:-13s; --fh-drift:-6px;  --fh-op:.36; }
+
+@keyframes fh-float{
+  0%{ transform:translateY(0) translateX(0) scale(.6); opacity:0; }
+  10%{ opacity:var(--fh-op,.3); }
+  90%{ opacity:var(--fh-op,.3); }
+  100%{ transform:translateY(-320px) translateX(var(--fh-drift,10px)) scale(1); opacity:0; }
+}
+
+/* Fewer particles on small screens — matches the sitewide pattern of
+   trimming decorative animation for coarse-pointer/mobile devices. */
+@media (max-width:620px){
+  .fh-particles span:nth-child(n+8){ display:none; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .feature-hub::before{ animation:none; }
+  .fh-particles span{ animation:none; opacity:0; }
+}
 .feature-grid{ display:grid; grid-template-columns: repeat(6, 1fr); gap:18px; }
 .feature-grid + .feature-grid{ margin-top:18px; }
 .feature-grid-compact{ grid-template-columns: repeat(4,1fr); }
@@ -8728,6 +8781,10 @@ body.light .site-header .brand-tag{ color: var(--amber); }
      runs after the DOM is parsed, so this new title is picked up
      automatically — no observer changes needed. ============ -->
 <section class="section feature-hub" id="feature-hub" aria-label="Quick navigation">
+  <div class="fh-particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
   <div class="fh-crosshair" aria-hidden="true">
     <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
       <circle cx="60" cy="60" r="46" fill="none" stroke="currentColor" stroke-opacity=".22"/>
