@@ -1888,6 +1888,8 @@ select.field-input{ appearance:none; -webkit-appearance:none; cursor:pointer; }
 @media (max-width:600px){
   .lrank-row{ grid-template-columns:40px 1fr 70px 36px; gap:10px; padding:12px 14px; }
   .lrank-hs{ display:none; }
+  .lrank-header-row{ grid-template-columns:40px 1fr 36px !important; gap:10px !important; padding:10px 14px !important; }
+  .lrank-header-row > div:nth-child(3){ display:none; }
 }
 
 /* Sidebar panel */
@@ -6135,15 +6137,8 @@ body.nav-open-lock { overflow: hidden; }
 /* --- Tab rows: horizontal scroll on mobile --- */
 @media (max-width: 520px) {
   .tab-row, .guild-hub-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px;
-    scrollbar-width: none;
+    flex-wrap: wrap;
   }
-  .tab-row::-webkit-scrollbar,
-  .guild-hub-tabs::-webkit-scrollbar { display: none; }
-  .tab-btn, .guild-tab-btn { flex-shrink: 0; }
 }
 
 /* --- Section padding: tighter on mobile --- */
@@ -9767,7 +9762,7 @@ body.light #device-search::after{ opacity:.25; }
            checkout. -->
       <div class="pro-launch-banner" id="proLaunchBanner" role="note">
         <div class="pro-launch-banner-copy">
-          <span class="pro-launch-banner-icon" aria-hidden="true">🔥</span>
+          <span class="pro-launch-banner-icon" id="proLaunchBannerIcon" aria-hidden="true">🔥</span>
           <div>
             <p class="pro-launch-banner-title" id="proLaunchBannerTitle">JUTTFHX PRO Launch Offer</p>
             <p class="pro-launch-banner-sub" id="proLaunchBannerSub">&mdash;</p>
@@ -11747,7 +11742,7 @@ body.light #pro-hud-vault .pro-hudv-lock-item{ background: rgba(0,0,0,.03); }
     <div class="lrank-shell">
       <!-- Main ranking list -->
       <div class="glass">
-        <div style="display:grid; grid-template-columns:52px 1fr 90px 90px 52px; gap:16px; padding:10px 22px; border-bottom:1px solid var(--hairline);">
+        <div class="lrank-header-row" style="display:grid; grid-template-columns:52px 1fr 90px 90px 52px; gap:16px; padding:10px 22px; border-bottom:1px solid var(--hairline);">
           <div style="font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); text-align:center;">#</div>
           <div style="font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint);">Device</div>
           <div style="font-family:var(--f-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); text-align:center;">Headshot</div>
@@ -15521,11 +15516,32 @@ body.light #comboMetaBuilds .combo-meta-locked{ background: rgba(0,0,0,.03); }
             </div>
 
             <div class="glass admin-panel">
-              <div class="admin-panel-head"><h3>Launch Offer</h3></div>
+              <div class="admin-panel-head"><h3>Launch Offer / Custom Sale Banner</h3></div>
               <div class="admin-form-grid">
+                <div class="field" style="grid-column:1/-1;">
+                  <div class="admin-toggle-row" style="padding:0 0 14px;">
+                    <div class="admin-toggle-info"><b>Show banner on Pro page</b><span>Turn the whole banner off without losing your saved text.</span></div>
+                    <label class="admin-switch"><input type="checkbox" id="proLaunchEnabled"><span class="admin-switch-track"></span></label>
+                  </div>
+                </div>
+                <div class="field"><label for="proLaunchIcon">Icon / emoji</label>
+                  <input class="field-input" id="proLaunchIcon" type="text" maxlength="4" placeholder="🔥">
+                </div>
+                <div class="field" style="grid-column:span 2;"><label for="proLaunchTitle">Banner title</label>
+                  <input class="field-input" id="proLaunchTitle" type="text" maxlength="80" placeholder="JUTTFHX PRO Launch Offer">
+                </div>
+                <div class="field" style="grid-column:1/-1;"><label for="proLaunchMessage">Custom message (optional)</label>
+                  <textarea class="field-input" id="proLaunchMessage" rows="2" maxlength="160" style="resize:vertical;" placeholder="Write a seasonal sale, an announcement, a discount code — anything. Leave blank to auto-show live plan pricing instead."></textarea>
+                </div>
+                <div class="field" style="grid-column:1/-1;">
+                  <div class="admin-toggle-row" style="padding:0 0 14px;">
+                    <div class="admin-toggle-info"><b>Show countdown timer</b><span>Turn off for a plain announcement banner with no days/hrs/min/sec ticker.</span></div>
+                    <label class="admin-switch"><input type="checkbox" id="proLaunchShowCountdown"><span class="admin-switch-track"></span></label>
+                  </div>
+                </div>
                 <div class="field" style="grid-column:1/-1;"><label for="proLaunchDeadline">Deadline (Pakistan time, UTC+5)</label>
                   <input class="field-input" id="proLaunchDeadline" type="datetime-local">
-                  <p class="admin-pane-note" style="margin-top:6px;">Countdown on the Pro page and the launch pricing badge both follow this. After the deadline, prices display without the launch discount.</p>
+                  <p class="admin-pane-note" style="margin-top:6px;">Countdown on the Pro page and the launch pricing badge both follow this. After the deadline, the banner switches to its expired state (or hide it entirely with the toggle above).</p>
                 </div>
               </div>
             </div>
@@ -25083,13 +25099,24 @@ window.JX_mergeProPlans = (remote) => {
    JX_isProLaunchOfferActive/JX_getProLaunchCountdown below read
    window.JX_ProLaunchOffer.deadlineISO off this same object reference,
    so they need no changes at all. */
-const PRO_LAUNCH_OFFER_DEFAULT = { deadlineISO: "2026-09-30T23:59:59+05:00" };
+const PRO_LAUNCH_OFFER_DEFAULT = {
+  deadlineISO: "2026-09-30T23:59:59+05:00",
+  enabled: true,
+  icon: "🔥",
+  title: "JUTTFHX PRO Launch Offer",
+  message: "",
+  showCountdown: true
+};
 function loadProLaunchOffer(){
   try{
     const raw = localStorage.getItem("juttfhx_pro_launch_offer_v1");
     if(raw){
       const parsed = JSON.parse(raw);
-      if(parsed && parsed.deadlineISO) return parsed;
+      // Merge over the defaults rather than returning parsed as-is: an
+      // offer object saved before PRO-P06 (custom banner) only has
+      // deadlineISO, so this backfills enabled/icon/title/message/
+      // showCountdown for it instead of leaving them undefined.
+      if(parsed && parsed.deadlineISO) return Object.assign({}, PRO_LAUNCH_OFFER_DEFAULT, parsed);
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(PRO_LAUNCH_OFFER_DEFAULT));
@@ -27771,6 +27798,11 @@ function renderProPlansEditor(){
   const qNormal = document.getElementById("proPlan3monthNormal");
   const qDuration = document.getElementById("proPlan3monthDuration");
   const deadline = document.getElementById("proLaunchDeadline");
+  const enabled = document.getElementById("proLaunchEnabled");
+  const icon = document.getElementById("proLaunchIcon");
+  const title = document.getElementById("proLaunchTitle");
+  const message = document.getElementById("proLaunchMessage");
+  const showCountdown = document.getElementById("proLaunchShowCountdown");
   if(!mAmount) return; // panel not in DOM yet
   mAmount.value = plans.monthly.amount;
   mNormal.value = plans.monthly.normalAmount;
@@ -27779,6 +27811,11 @@ function renderProPlansEditor(){
   qNormal.value = plans["3month"].normalAmount;
   qDuration.value = plans["3month"].durationDays;
   deadline.value = isoToDatetimeLocal(offer.deadlineISO);
+  if(enabled) enabled.checked = offer.enabled !== false;
+  if(icon) icon.value = offer.icon || "";
+  if(title) title.value = offer.title || "";
+  if(message) message.value = offer.message || "";
+  if(showCountdown) showCountdown.checked = offer.showCountdown !== false;
 }
 renderProPlansEditor();
 if(backend && typeof backend.getProPlans === "function"){
@@ -27811,7 +27848,14 @@ document.getElementById("proPlansSaveBtn").addEventListener("click", async ()=>{
       durationDays: num("proPlan3monthDuration", before.plans["3month"].durationDays) || before.plans["3month"].durationDays
     }
   };
-  const updatedOffer = { deadlineISO: datetimeLocalToIso(document.getElementById("proLaunchDeadline").value) };
+  const updatedOffer = {
+    deadlineISO: datetimeLocalToIso(document.getElementById("proLaunchDeadline").value),
+    enabled: !!document.getElementById("proLaunchEnabled").checked,
+    icon: document.getElementById("proLaunchIcon").value.trim(),
+    title: document.getElementById("proLaunchTitle").value.trim(),
+    message: document.getElementById("proLaunchMessage").value.trim(),
+    showCountdown: !!document.getElementById("proLaunchShowCountdown").checked
+  };
   const saveBtn = document.getElementById("proPlansSaveBtn");
   saveBtn.disabled = true;
   saveBtn.textContent = "Saving…";
@@ -27821,7 +27865,7 @@ document.getElementById("proPlansSaveBtn").addEventListener("click", async ()=>{
     if(backend && typeof backend.saveProPlans === "function"){
       await backend.saveProPlans({ ...updatedPlans, launchOffer: updatedOffer });
     }
-    window.JX_logAudit("Pro Plans", JSON.stringify(before.plans), JSON.stringify(updatedPlans));
+    window.JX_logAudit("Pro Plans", JSON.stringify({ plans: before.plans, offer: before.offer }), JSON.stringify({ plans: updatedPlans, offer: updatedOffer }));
     renderProPlansEditor();
     showToastSafe("success", "Pro Plans saved — live for every visitor now.");
   }catch(err){
@@ -32274,8 +32318,11 @@ html.jx-scroll-active *::after{
   if(banner && !window.__jxProLaunchCountdownStarted && typeof window.JX_getProLaunchCountdown === "function"){
     window.__jxProLaunchCountdownStarted = true;
 
+    var iconEl = document.getElementById("proLaunchBannerIcon");
+    var titleEl = document.getElementById("proLaunchBannerTitle");
     var subEl = document.getElementById("proLaunchBannerSub");
     var deadlineEl = document.getElementById("proLaunchBannerDeadline");
+    var countdownEl = document.getElementById("proLaunchCountdown");
     var unitEls = {
       days: banner.querySelector('[data-countdown="days"]'),
       hours: banner.querySelector('[data-countdown="hours"]'),
@@ -32295,18 +32342,39 @@ html.jx-scroll-active *::after{
     var wasActive = null; // force the first tick to render plan cards too
 
     function tick(){
+      // PRO-P06: fully admin-authored banner — enabled/icon/title/
+      // message/showCountdown all come from JX_ProLaunchOffer (same
+      // object deadlineISO already lived on), read fresh every tick so
+      // an admin save picked up by JX_mergeProLaunchOffer shows up
+      // without a page reload.
+      var offer = window.JX_getProLaunchOffer ? window.JX_getProLaunchOffer() : {};
+
+      if(offer.enabled === false){
+        banner.hidden = true;
+        return;
+      }
+      banner.hidden = false;
+
+      if(iconEl && offer.icon) iconEl.textContent = offer.icon;
+      if(titleEl && offer.title) titleEl.textContent = offer.title;
+      if(countdownEl) countdownEl.hidden = offer.showCountdown === false;
+
       var state = window.JX_getProLaunchCountdown();
       banner.setAttribute("data-launch-state", state.active ? "active" : "expired");
 
+      var customMessage = (offer.message || "").trim();
+
       if(state.active){
-        if(subEl) subEl.textContent = launchSubCopy();
+        if(subEl) subEl.textContent = customMessage || launchSubCopy();
+        if(deadlineEl) deadlineEl.hidden = offer.showCountdown === false;
         if(deadlineEl) deadlineEl.textContent = "Offer ends September 30, 2026";
         if(unitEls.days) unitEls.days.textContent = String(state.days);
         if(unitEls.hours) unitEls.hours.textContent = pad2(state.hours);
         if(unitEls.minutes) unitEls.minutes.textContent = pad2(state.minutes);
         if(unitEls.seconds) unitEls.seconds.textContent = pad2(state.seconds);
       } else {
-        if(subEl) subEl.textContent = "Launch pricing has ended \u2014 standard pricing now applies.";
+        if(subEl) subEl.textContent = customMessage || "Launch pricing has ended \u2014 standard pricing now applies.";
+        if(deadlineEl) deadlineEl.hidden = offer.showCountdown === false;
         if(deadlineEl) deadlineEl.textContent = "Launch Offer Ended";
       }
 
@@ -35465,5 +35533,212 @@ html.jx-scroll-active *::after{
 })();
 </script>
 <!-- ============== END PHASE D JS ============== -->
+
+<!-- ============================================================
+     JX FX — Gold Signature Motion Kit
+     A self-contained, namespaced (jxfx-) layer of animation
+     primitives matching the site's gold/HUD identity:
+       1. Gold Energy Pulse — rotating gold arc on key CTAs
+       2. Reticle Lock       — scan-and-lock overlay
+       3. Controlled Impact  — tiny shake + shockwave ring
+       4. Gold Spark Burst   — success particles
+       5. Radar Sweep        — rotating scan overlay
+     Everything here is additive: it only adds classes/elements
+     and never touches existing business logic, so it can't break
+     any other module on the page. All motion respects
+     prefers-reduced-motion.
+     ============================================================ -->
+<style id="jxfx-styles">
+.jxfx-pulse{ position:relative; isolation:isolate; }
+.jxfx-pulse.btn{ overflow:visible; }
+.jxfx-pulse::after{
+  content:''; position:absolute; inset:-2px; border-radius:inherit; padding:2px;
+  background: conic-gradient(from 0deg, transparent 0deg 255deg, var(--gold-bright) 300deg, var(--gold) 322deg, transparent 345deg 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: jxfx-rotate 2.6s linear infinite;
+  pointer-events:none; z-index:-1; opacity:.9;
+}
+
+.jxfx-radar{ position:relative; overflow:hidden; }
+.jxfx-radar::before{
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background: conic-gradient(from 0deg, rgba(244,196,48,.22), transparent 55deg);
+  animation: jxfx-rotate 3.2s linear infinite;
+  mix-blend-mode: screen; opacity:.6;
+}
+
+@keyframes jxfx-rotate{ to{ transform: rotate(360deg); } }
+
+@keyframes jxfx-shake{
+  0%,100%{ transform:translate(0,0); }
+  20%{ transform:translate(-2px,1px); }
+  40%{ transform:translate(2px,-1px); }
+  60%{ transform:translate(-1px,2px); }
+  80%{ transform:translate(1px,-2px); }
+}
+.jxfx-shake{ animation: jxfx-shake .32s ease-in-out; }
+
+.jxfx-shockwave{
+  position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px;
+  border-radius:50%; border:2px solid var(--gold-bright);
+  pointer-events:none; z-index:5; box-shadow:0 0 12px rgba(244,196,48,.5);
+  animation: jxfx-shockwave-expand .6s cubic-bezier(.2,.7,.3,1) forwards;
+}
+@keyframes jxfx-shockwave-expand{
+  0%{ width:10px; height:10px; margin:-5px 0 0 -5px; opacity:.9; border-width:3px; }
+  100%{ width:160px; height:160px; margin:-80px 0 0 -80px; opacity:0; border-width:1px; }
+}
+
+.jxfx-spark{
+  position:absolute; left:50%; top:50%; width:4px; height:4px; border-radius:50%;
+  background: var(--gold-bright); box-shadow:0 0 6px 1px var(--gold);
+  pointer-events:none; z-index:6;
+  animation: jxfx-spark-fly .55s ease-out forwards;
+}
+@keyframes jxfx-spark-fly{
+  0%{ transform: translate(-50%,-50%) translate(0,0) scale(1); opacity:1; }
+  100%{ transform: translate(-50%,-50%) translate(var(--dx), var(--dy)) scale(.3); opacity:0; }
+}
+
+.jxfx-reticle-overlay{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  pointer-events:none; z-index:7;
+}
+.jxfx-reticle-overlay svg{ width:56%; height:56%; max-width:120px; max-height:120px; overflow:visible; }
+.jxfx-reticle-ring{ stroke: var(--gold-bright); fill:none; stroke-width:2; stroke-linecap:round; }
+.jxfx-reticle-scan{ transform-origin: center; animation: jxfx-reticle-scan .5s ease-out forwards; }
+@keyframes jxfx-reticle-scan{ from{ transform: scale(1.6) rotate(-20deg); opacity:.25; } to{ transform: scale(1) rotate(0deg); opacity:1; } }
+.jxfx-reticle-flash{ opacity:0; animation: jxfx-flash .35s ease-out .3s forwards; }
+@keyframes jxfx-flash{ 0%{ opacity:0; } 40%{ opacity:1; } 100%{ opacity:0; } }
+
+@media (prefers-reduced-motion: reduce){
+  .jxfx-pulse::after, .jxfx-radar::before, .jxfx-shake, .jxfx-shockwave, .jxfx-spark,
+  .jxfx-reticle-scan, .jxfx-reticle-flash{ animation:none !important; }
+}
+</style>
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function ensureRelative(el){
+    var cs = getComputedStyle(el);
+    if(cs.position === 'static'){ el.style.position = 'relative'; }
+  }
+
+  /* Public API — JXFX.pulse / .radar / .impact / .sparkBurst / .reticleLock —
+     so any future module on the page can trigger these effects on demand
+     without needing to know the implementation. */
+  var JXFX = window.JXFX = {
+    pulse: function(el, on){
+      if(!el) return;
+      ensureRelative(el);
+      el.classList.toggle('jxfx-pulse', on !== false);
+    },
+    radar: function(el, on){
+      if(!el) return;
+      ensureRelative(el);
+      el.classList.toggle('jxfx-radar', on !== false);
+    },
+    impact: function(el){
+      if(!el || reduceMotion) return;
+      ensureRelative(el);
+      el.classList.remove('jxfx-shake'); void el.offsetWidth;
+      el.classList.add('jxfx-shake');
+      setTimeout(function(){ el.classList.remove('jxfx-shake'); }, 340);
+      var wave = document.createElement('div');
+      wave.className = 'jxfx-shockwave';
+      el.appendChild(wave);
+      setTimeout(function(){ wave.remove(); }, 650);
+      JXFX.sparkBurst(el, 10);
+    },
+    sparkBurst: function(el, count){
+      if(!el || reduceMotion) return;
+      ensureRelative(el);
+      count = count || 8;
+      for(var i=0;i<count;i++){
+        (function(){
+          var s = document.createElement('span');
+          s.className = 'jxfx-spark';
+          var angle = Math.random()*Math.PI*2;
+          var dist = 26 + Math.random()*34;
+          s.style.setProperty('--dx', (Math.cos(angle)*dist).toFixed(1)+'px');
+          s.style.setProperty('--dy', (Math.sin(angle)*dist).toFixed(1)+'px');
+          s.style.animationDelay = (Math.random()*60)+'ms';
+          el.appendChild(s);
+          setTimeout(function(){ s.remove(); }, 700);
+        })();
+      }
+    },
+    reticleLock: function(el){
+      if(!el || reduceMotion) return;
+      ensureRelative(el);
+      var overlay = document.createElement('div');
+      overlay.className = 'jxfx-reticle-overlay';
+      overlay.innerHTML =
+        '<svg viewBox="0 0 100 100" class="jxfx-reticle-scan">'+
+          '<circle class="jxfx-reticle-ring" cx="50" cy="50" r="34"/>'+
+          '<circle class="jxfx-reticle-ring jxfx-reticle-flash" cx="50" cy="50" r="42"/>'+
+          '<line class="jxfx-reticle-ring" x1="50" y1="6" x2="50" y2="20"/>'+
+          '<line class="jxfx-reticle-ring" x1="50" y1="80" x2="50" y2="94"/>'+
+          '<line class="jxfx-reticle-ring" x1="6" y1="50" x2="20" y2="50"/>'+
+          '<line class="jxfx-reticle-ring" x1="80" y1="50" x2="94" y2="50"/>'+
+        '</svg>';
+      el.appendChild(overlay);
+      setTimeout(function(){ overlay.remove(); }, 700);
+    }
+  };
+
+  /* ---- Auto-wire: primary gold CTAs / active PRO state get the idle pulse ---- */
+  document.querySelectorAll(
+    '.hero-cta-primary, #proTunerApplyBtn, .pro-plan-cta, .jx-pro-strip-cta, .reviews-pro-cta-btn'
+  ).forEach(function(el){ JXFX.pulse(el); });
+
+  var proCard = document.getElementById('acctProCard');
+  if(proCard && proCard.querySelector('.acct-pro-card-tag.is-active')){ JXFX.radar(proCard); }
+
+  /* ---- Success sparks whenever a success toast appears anywhere on the site ---- */
+  var toastStack = document.getElementById('toastStack');
+  if(toastStack && 'MutationObserver' in window){
+    new MutationObserver(function(mutations){
+      mutations.forEach(function(m){
+        (m.addedNodes || []).forEach(function(node){
+          if(node.nodeType === 1 && node.classList && node.classList.contains('success')){
+            JXFX.sparkBurst(node, 8);
+          }
+        });
+      });
+    }).observe(toastStack, { childList:true });
+  }
+
+  /* ---- Spark burst on favorite toggles and "copied" confirmations ---- */
+  document.addEventListener('click', function(e){
+    var target = e.target.closest('.fav-btn, .hud-copy-btn');
+    if(!target) return;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        if(target.classList.contains('active') || target.classList.contains('copied')){
+          JXFX.sparkBurst(target, 6);
+        }
+      });
+    });
+  }, true);
+
+  /* ---- Reticle lock on the hero/search reticle when a device is selected ---- */
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.suggest-item')) return;
+    var reticle = document.querySelector('.hero-visual .reticle, .result-placeholder .reticle');
+    if(reticle){ JXFX.reticleLock(reticle); }
+  }, true);
+
+  /* ---- Controlled impact + sparks when a tuned sensitivity is applied ---- */
+  document.addEventListener('click', function(e){
+    var applyBtn = e.target.closest('#proTunerApplyBtn');
+    if(applyBtn){ JXFX.impact(applyBtn); }
+  }, true);
+})();
+</script>
+<!-- ============== END JX FX ============== -->
 </body>
 </html>
