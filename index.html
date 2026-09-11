@@ -16689,7 +16689,7 @@ const JX_SETTINGS_KEY = "juttfhx_site_settings_v1";
 // existing behavior/keys are untouched; every other key gets its own
 // entry in sectionMeta.
 const SECTION_KEYS = [
-  "hero","deviceSearch","liveRanking",
+  "hero","featureHub","deviceSearch","liveRanking",
   "tournaments","hudGallery","reviews","request",
   "characterCombo","dashboardWidgets","guildHub","teamFinder",
   // Registered here so the Section Manager can reorder/hide the PRO
@@ -16705,7 +16705,8 @@ const SECTION_KEYS = [
   "proConvert","proDestination","proCheckout"
 ];
 const SECTION_LABELS = {
-  hero:"Hero", deviceSearch:"Select Your Device",
+  hero:"Hero", featureHub:"Quick Access",
+  deviceSearch:"Select Your Device",
   liveRanking:"Live Device Ranking",
   tournaments:"Free Fire Tournaments", hudGallery:"HUD Layout Gallery",
   reviews:"User Reviews", request:"Device Request Center",
@@ -16718,7 +16719,8 @@ const SECTION_LABELS = {
 };
 // DOM selector for each section's root element (used for reorder + hide).
 const SECTION_DOM_SEL = {
-  hero:"#hero", deviceSearch:"#device-search",
+  hero:"#hero", featureHub:"#feature-hub",
+  deviceSearch:"#device-search",
   liveRanking:"#live-ranking",
   tournaments:"#tournaments",
   hudGallery:"#hud-gallery", reviews:"#reviews", request:"#request",
@@ -16759,6 +16761,7 @@ const DEFAULT_JX_SETTINGS = {
   // Settings maintenance toggles — the newer Section Manager panel reads
   // and writes this same map, plus the richer sectionMeta below.)
   sections: {
+    featureHub:true,
     deviceSearch:true, liveRanking:true,
     tournaments:true, hudGallery:true, reviews:true,
     request:true, characterCombo:true,
