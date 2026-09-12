@@ -18404,8 +18404,7 @@ Fire Button Size: ${sens.fireBtnSize ?? 56}%`;
      again on the next copy, since each copy is its own moment to
      invite feedback. */
   function maybeShowReviewPrompt(){
-    clearTimeout(reviewPromptTimer);
-    reviewPromptTimer = setTimeout(()=>{ openReviewPrompt(); }, 900);
+    // Disabled site-wide per request — no more post-copy review popup.
   }
   let reviewPromptTimer = null;
 
