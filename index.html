@@ -19011,9 +19011,9 @@ Fire Button Size: ${sens.fireBtnSize ?? 56}%`;
 
   /* ---- Payment methods — admin-editable in the Tournaments panel ---- */
   const DEFAULT_PAYMENT_METHODS = {
-    easypaisa: { label:"Easypaisa", rows:[ ["Account Title","JUTTFHX Esports"], ["Easypaisa Number","0309-1234567"] ] },
-    nayapay:   { label:"NayaPay",   rows:[ ["Account Title","JUTTFHX Esports"], ["NayaPay ID / Number","0309-1234567"] ] },
-    bank:      { label:"Bank Transfer", rows:[ ["Account Title","JUTTFHX Esports"], ["Bank","Meezan Bank"], ["Account Number","0401-2345678-9"] ] }
+    easypaisa: { label:"Easypaisa", rows:[ {label:"Account Title", value:"JUTTFHX Esports"}, {label:"Easypaisa Number", value:"0309-1234567"} ] },
+    nayapay:   { label:"NayaPay",   rows:[ {label:"Account Title", value:"JUTTFHX Esports"}, {label:"NayaPay ID / Number", value:"0309-1234567"} ] },
+    bank:      { label:"Bank Transfer", rows:[ {label:"Account Title", value:"JUTTFHX Esports"}, {label:"Bank", value:"Meezan Bank"}, {label:"Account Number", value:"0401-2345678-9"} ] }
   };
   const PAYMENT_METHODS_KEY = "juttfhx_payment_methods_v1";
   function loadPaymentMethods(){
@@ -19138,7 +19138,7 @@ Fire Button Size: ${sens.fireBtnSize ?? 56}%`;
     if(method){
       tourneyPaymentDetails.innerHTML = `
         <div style="font-family:var(--f-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:6px;">Send payment to — ${escapeHtml(method.label)}</div>
-        ${method.rows.map(([k,v]) => `<div class="payment-details-row"><span>${escapeHtml(k)}</span><b>${escapeHtml(v)}</b></div>`).join("")}
+        ${method.rows.map(row => `<div class="payment-details-row"><span>${escapeHtml(row.label)}</span><b>${escapeHtml(row.value)}</b></div>`).join("")}
       `;
       tourneyPaymentDetails.classList.add("show");
     }
@@ -27709,8 +27709,8 @@ function renderPaymentMethodsEditor(){
       <div class="jx-dyn-list" data-method-rows="${key}">
         ${m.rows.map((row, i)=> `
           <div class="jx-dyn-row" data-row-idx="${i}">
-            <input class="field-input" data-row-label type="text" value="${escapeHtml(row[0])}" placeholder="Label">
-            <input class="field-input" data-row-value type="text" value="${escapeHtml(row[1])}" placeholder="Value">
+            <input class="field-input" data-row-label type="text" value="${escapeHtml(row.label)}" placeholder="Label">
+            <input class="field-input" data-row-value type="text" value="${escapeHtml(row.value)}" placeholder="Value">
             <button class="jx-dyn-remove" data-remove-row="${i}" aria-label="Remove row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
           </div>`).join("")}
       </div>
@@ -27731,7 +27731,7 @@ document.getElementById("paymentMethodAddBtn").addEventListener("click", ()=>{
   let n = Object.keys(methods).length + 1;
   let key = "method" + n;
   while(methods[key]){ n++; key = "method" + n; }
-  const updated = { ...methods, [key]: { label: "New Payment Method", rows: [["Label", "Value"]] } };
+  const updated = { ...methods, [key]: { label: "New Payment Method", rows: [{label:"Label", value:"Value"}] } };
   window.JX_savePaymentMethods(updated);
   renderPaymentMethodsEditor();
   showToastSafe("info", "New payment method added — edit the details, then Save.");
@@ -27772,10 +27772,10 @@ document.getElementById("paymentMethodsSaveBtn").addEventListener("click", async
   document.querySelectorAll("#paymentMethodsEditor [data-method]").forEach(fieldset=>{
     const key = fieldset.dataset.method;
     const label = fieldset.querySelector(`[data-method-label="${key}"]`).value.trim() || "Untitled Method";
-    const rows = [...fieldset.querySelectorAll(".jx-dyn-row")].map(row=> [
-      row.querySelector("[data-row-label]").value.trim(),
-      row.querySelector("[data-row-value]").value.trim()
-    ]).filter(r=> r[0] || r[1]);
+    const rows = [...fieldset.querySelectorAll(".jx-dyn-row")].map(row=> ({
+      label: row.querySelector("[data-row-label]").value.trim(),
+      value: row.querySelector("[data-row-value]").value.trim()
+    })).filter(r=> r.label || r.value);
     updated[key] = { label, rows };
   });
   const saveBtn = document.getElementById("paymentMethodsSaveBtn");
@@ -33116,10 +33116,10 @@ html.jx-scroll-active *::after{
     var rows = (m && Array.isArray(m.rows)) ? m.rows : [];
     if(!m || !rows.length){ show(el.payDetails, false); return; }
     rows.forEach(function(pair){
-      if(!Array.isArray(pair) || pair.length < 2) return;
+      if(!pair || typeof pair !== "object") return;
       var row = make("div", "pro-pay-details-row");
-      row.appendChild(make("span", null, pair[0]));
-      row.appendChild(make("b", null, pair[1]));
+      row.appendChild(make("span", null, pair.label));
+      row.appendChild(make("b", null, pair.value));
       el.payDetails.appendChild(row);
     });
     show(el.payDetails, !!el.payDetails.firstChild);
